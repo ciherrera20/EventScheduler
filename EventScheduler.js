@@ -302,8 +302,57 @@ function EventScheduler() {
 		if (commandQueue.length === 0)
 			return;
 		
+		// An array that will eventually be populated by the Commands that are able to run. It is initialized with the highest priority Command
+		var commandsToRun = new Array(commandQueue.last());
+		
+		// An array to keep track of which Subsystems have been claimed by a Command. It is initialized with the highest priority Command's requirements
+		var usedSubsystems = commandQueue.last().getRequirements().concat();
+		
+		// A flag to keep track of whether the current Command being checked can run
+		var canRun;
+		
+		// Loops through the commandQueue and checks which Commands can run
+		for (var i = commandQueue.length - 2; i >= 0; i--) {
+			// Assume the command canRun
+			canRun = true;
+			
+			// The current Command being evaluated
+			currCommand = commandQueue[i];
+			
+			// An array to keep track of the current Command's requirements
+			currCommandReqs = currCommand.getRequirements();
+			
+			// Loops through the current Command's requirements to check if they are being used by a higher priority Command
+			for (var j = 0; j < currCommandReqs; j++) {
+				// Checks if the subsystem being checked is in use
+				if (usedSubsystems.indexOf(currCommandReqs[j]) !== -1) {
+					// The current Command cannot run
+					canRun = false;
+					break;
+				}
+			}
+			
+			// If the current Command can run...
+			if (canRun) {
+				// The current Command is added to the commandsToRun Array
+				commandsToRun.push(currCommand);
+				
+				// Its requirements are added to the Array of Subsystems in use
+				usedSubsystems = usedSubsystems.concat(currCommandReqs);
+			} else {
+				// If the current Command is running...
+				if (currCommand.getStatus() === "running") {
+					// Call its interrupted method
+					currCommand.interrupted();
+					// If it is not a default Command, remove it from the queue
+					if (!currCommand.isDefault())
+						rawCommandQueue.splice(rawCommandQueue.indexOf(currCommand), 1);
+				}
+			}
+		}
+		
 		// Adds Commands sorted by Subsystem and by priority into the subsystems Array
-		for (var i = 0; i < commandQueue.length; i++) {
+		/*for (var i = 0; i < commandQueue.length; i++) {
 			currCommand = commandQueue[i];
 			for (var j = 0; j < subsystems.length; j++) {
 				if (!subsystems[j])
@@ -338,7 +387,7 @@ function EventScheduler() {
 					canCombine = false;
 					if (nextRow[j].getStatus() === "running") {
 						nextRow[j].interrupted();
-						if (!nextRow[j].isDefault)
+						if (!nextRow[j].isDefault())
 							rawCommandQueue.splice(rawCommandQueue.indexOf(nextRow[j]), 1);
 					}
 				}
@@ -351,17 +400,15 @@ function EventScheduler() {
 				for (var j = 0; j < subsystems.length; j++)	
 					subsystems[j][i - 1] = newRow[j];
 			}
-		}
+		}*/
 		
 		// Run top priority commands whose subsystems are free
-		for (var i = 0; i < subsystems.length; i++) {
-			if (subsystems[i][0] !== 0) {
-				currCommand = subsystems[i][0];
-				if (currCommand.getStatus() === "idle") {
-					currCommand.initialize();
-				}
-				currCommand.execute();
+		for (var i = 0; i < commandsToRun.length; i++) {
+			currCommand = commandsToRun[i];
+			if (currCommand.getStatus() === "idle") {
+				currCommand.initialize();
 			}
+			currCommand.execute();
 		}
 	}
 }

@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<title>EventScheduler</title>
-		<script src="Commands.js"></script>
+		<script src="EventScheduler.js"></script>
 		<script>
 			var SchedulerInstance = new EventScheduler();
 			
@@ -224,7 +224,7 @@
 				}
 			}, 2);
 			
-			var loop = setInterval(SchedulerInstance.loop, 1);
+			//var loop = setInterval(SchedulerInstance.loop, 1);
 			
 			Base.setDefaultCommand(DriveWithJoy);
 			Arm.setDefaultCommand(StopArm);
