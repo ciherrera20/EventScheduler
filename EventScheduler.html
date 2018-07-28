@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>EventScheduler</title>
+		<script src="Commands.js"></script>
+		<script>
+			var SchedulerInstance = new EventScheduler();
+			
+			// Subsystems
+			
+			// /**
+			// * Represents a subsystem
+			// * @constructor
+			// * @param {string} the name of the subsystem
+			// */
+			//var ExampleSubsystem = new Subsystem("ExampleSubsystem");
+			
+			var Base = new Subsystem("Base");
+			var Arm = new Subsystem("Arm");
+			var Claw = new Subsystem("Claw");
+			
+			// Commands
+			
+			///**
+			// * A command factory to create instances of a command
+			// * @constructor
+			// * @param {array} A list of subsystems the command requires
+			// * @param {object} An object containing the functions canRun, initialize, execute, isFinished, end, and interrupted, as well as any other variables these functions may want to access
+			// * @param {number} A priority assigned to the command
+			// */
+			//var ExampleCommand = new CommandFactory([exampleSubsystem], {
+			//	exampleKey: false, // Keys in this object can be accessed using "that"
+			//	canRun: function(that) { // Code to check if the command can run. Default is true
+			//		return true;
+			//	},
+			//	initialize: function(that) { // Code to run once before the command begins to execute
+			//		return;
+			//	},
+			//	execute: function(that) { // Code to run in a loop
+			//		return;
+			//	},
+			//	isFinished: function(that) { // Code to check if the command is finished. Default is false
+			//		return that.exampleKey; // exampleKey is accessed using "that"
+			//	},
+			//	end: function(that) { // Code to run when the command finishes
+			//		return;
+			//	},
+			//	interrupted: function(that) { // Code to run when the command is interrupted
+			//		return;
+			//	}
+			//}, 1);
+			
+			var StopArm = new CommandFactory([Arm], {
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					return;
+				},
+				execute: function(that) {
+					document.getElementById("stopArm").innerHTML = "running";
+					document.getElementById("arm").innerHTML = "stopped by StopArm";
+					return;
+				},
+				isFinished: function(that) {
+					return false;
+				},
+				end: function(that) {
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("stopArm").innerHTML = "interrupted";
+					return;
+				}
+			}, 0);
+
+			var StopClaw = new CommandFactory([Claw], {
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					return;
+				},
+				execute: function(that) {
+					document.getElementById("stopClaw").innerHTML = "running";
+					document.getElementById("claw").innerHTML = "stopped by StopClaw";
+					return;
+				},
+				isFinished: function(that) {
+					return false;
+				},
+				end: function(that) {
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("stopClaw").innerHTML = "interrupted";
+					return;
+				}
+			}, 0);
+
+			var DriveWithJoy = new CommandFactory([Base], {
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					return;
+				},
+				execute: function(that) {
+					document.getElementById("driveWithJoy").innerHTML = "running";
+					document.getElementById("base").innerHTML = "in use by DriveWithJoy";
+					return;
+				},
+				isFinished: function(that) {
+					return false;
+				},
+				end: function(that) {
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("driveWithJoy").innerHTML = "interrupted";
+					return;
+				}
+			}, 0);
+
+			var RaiseArm = new CommandFactory([Arm], {
+				counter: 0,
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					document.getElementById("raiseArm").innerHTML = "initializing";
+					that.counter = 0;
+					return;
+				},
+				execute: function(that) {
+					that.counter++;
+					document.getElementById("raiseArm").innerHTML = "running " + that.counter.toString();
+					document.getElementById("arm").innerHTML = "in use by RaiseArm";
+					return;
+				},
+				isFinished: function(that) {
+					if (that.counter > 1000) {
+						document.getElementById("base").innerHTML = "idle";
+						return true;
+					}
+					return false;
+				},
+				end: function(that) {
+					document.getElementById("raiseArm").innerHTML = "end";
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("raiseArm").innerHTML = "interrupted";
+					console.log("interrupted");
+					return;
+				}
+			}, 1);
+
+			var OpenClaw = new CommandFactory([Claw], {
+				counter: 0,
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					document.getElementById("openClaw").innerHTML = "initializing";
+					that.counter = 0;
+					return;
+				},
+				execute: function(that) {
+					that.counter++;
+					document.getElementById("openClaw").innerHTML = "running " + that.counter.toString();
+					document.getElementById("claw").innerHTML = "being opened by OpenClaw";
+					return;
+				},
+				isFinished: function(that) {
+					if (that.counter > 500) {
+						document.getElementById("claw").innerHTML = "idle";
+						return true;
+					}
+					return false;
+				},
+				end: function(that) {
+					document.getElementById("openClaw").innerHTML = "end";
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("openClaw").innerHTML = "interrupted";
+					return;
+				}
+			}, 1);
+			
+			var PickUpBall = new CommandFactory([Arm, Claw], {
+				counter: 0,
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					document.getElementById("pickUpBall").innerHTML = "initializing";
+					that.counter = 0;
+					return;
+				},
+				execute: function(that) {
+					that.counter++;
+					document.getElementById("pickUpBall").innerHTML = "running " + that.counter.toString();
+					document.getElementById("arm").innerHTML = "in use by pickUpBall";
+					document.getElementById("claw").innerHTML = "in use by pickUpBall";
+					return;
+				},
+				isFinished: function(that) {
+					if (that.counter > 5000) {
+						document.getElementById("arm").innerHTML = "idle";
+						document.getElementById("claw").innerHTML = "idle";
+						return true;
+					}
+					return false;
+				},
+				end: function(that) {
+					document.getElementById("pickUpBall").innerHTML = "end";
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("pickUpBall").innerHTML = "interrupted";
+					return;
+				}
+			}, 2);
+			
+			var loop = setInterval(SchedulerInstance.loop, 1);
+			
+			Base.setDefaultCommand(DriveWithJoy);
+			Arm.setDefaultCommand(StopArm);
+			Claw.setDefaultCommand(StopClaw);
+		</script>
+	</head>
+	<body>
+		<h3>Commands:</h3>
+		<p>Stop Arm: <span id="stopArm"></span></p>
+		<p>Stop Claw: <span id="stopClaw"></span></p>
+		<p>Drive With Joy: <span id="driveWithJoy"></span></p>
+		<p>Raise Arm: <span id="raiseArm"></span></p>
+		<p>Open Claw: <span id="openClaw"></span></p>
+		<p>Pick Up Ball: <span id="pickUpBall"></span></p>
+		<h3>Subsystems:</h3>
+		<p>Base: <span id="base"></span></p>
+		<p>Arm: <span id="arm"></span></p>
+		<p>Claw: <span id="claw"></span></p>
+	</body>
+<html>
