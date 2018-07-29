@@ -28,23 +28,6 @@ var CommandFactory = (function() {
 		if (!priority) // Default to 0 if the priority is undefined or null
 			priority = 0;
 		
-		// Adds the getRawCommandQueue function to the CommandFactory constructor
-		if (!this.constructor.getRawCommandQueue) {
-			// Gets the rawCommandQueue
-			this.constructor.getRawCommandQueue = function() {
-				return rawCommandQueue;
-			}
-		}
-		
-		// Adds the setDefault function to the CommandFactory constructor's prototype
-		if (!this.constructor.__proto__.setDefault) {
-			// Makes Commands created with this CommandFactory into default Commands
-			this.constructor.__proto__.setDefault = function() {
-				if (priority === 0 && requires.length === 1)
-					defaultCommand = true;
-			}
-		}
-		
 		// Flag to check if Commands created with this CommandFactory are default Commands
 		var defaultCommand = false;
 		
@@ -161,8 +144,8 @@ var CommandFactory = (function() {
 							return func;
 						})();
 						break;
-						
-					this[keyList[i]] = code[keyList[i]];
+					default:
+						this[keyList[i]] = code[keyList[i]];
 				}
 			}
 			
@@ -178,8 +161,19 @@ var CommandFactory = (function() {
 				rawCommandQueue.push(this);
 		}
 		
+		// Adds the setDefault function to the CommandFactory constructor's prototype
+		Command.setDefault = function() {
+			if (priority === 0 && requires.length === 1)
+				defaultCommand = true;
+		}
+		
 		// Returns the Command constructor
 		return Command;
+	}
+	
+	// Gets the rawCommandQueue
+	CommandFactory.getRawCommandQueue = function() {
+		return rawCommandQueue;
 	}
 	
 	// Returns the CommandFactory constructor
@@ -205,14 +199,6 @@ var Subsystem = (function() {
 			defaultCommand = new CommandFactory();
 		}
 		
-		// Adds the function getNumSubsystems to the constructor
-		if (!this.constructor.getNumSubsystems) {
-			// Gets the number of Subsystems that have been created
-			this.constructor.getNumSubsystems = function() {
-				return instances;
-			}
-		}
-		
 		// Gets the Subsystem ID of this Subsystem
 		this.getSubsystemID = function() {
 			return subsystemID;
@@ -223,9 +209,15 @@ var Subsystem = (function() {
 		
 		// Sets a CommandFactory to create default Commands, if one has not been set yet
 		this.setDefaultCommand = function(CommandFactory) {
-			if (!defaultCommand)
+			if (!defaultCommand) {
 				initDefault(CommandFactory);
+			}
 		}
+	}
+	
+	// Adds the function getNumSubsystems to the constructor
+	Subsystem.getNumSubsystems = function() {
+		return instances;
 	}
 	
 	// Returns the Subsystem constructor
@@ -243,7 +235,7 @@ function EventScheduler() {
 		var commandQueue = new Array();
 		
 		// Creates an Array with as many elements as Subsystems that have been created
-		var subsystems = new Array(Subsystem.getNumSubsystems());
+		var numSubsystems = Subsystem.getNumSubsystems();
 		
 		// Holds the current Command being manipulated inside for loops
 		var currCommand;
@@ -265,14 +257,13 @@ function EventScheduler() {
 			// Loops through the queue to find where to insert the Command based on priorities
 			for (var i = 0; i < queue.length; i++) {
 				// If the Command to be inserted has the highest priority, it is pushed to the top of the Array
-				if (i >= queue.length - 1) {
-					queue.push(command);
-					return;
-				} else if (command.getPriority() <= queue[i].getPriority() && !queue[i].isDefault()) { // Otherwise, it is inserted below Commands of the same priority that were added before it (unless they are default Commands)
+				if (command.getPriority() <= queue[i].getPriority() && !queue[i].isDefault()) { // Otherwise, it is inserted below Commands of the same priority that were added before it (unless they are default Commands)
 					queue.splice(i, 0, command); // Inserts the Command
 					return;
 				}
 			}
+			
+			queue.push(command);
 		}
 		
 		// Loops through the raw command queue
@@ -302,11 +293,16 @@ function EventScheduler() {
 		if (commandQueue.length === 0)
 			return;
 		
-		// An array that will eventually be populated by the Commands that are able to run. It is initialized with the highest priority Command
-		var commandsToRun = new Array(commandQueue.last());
+		// Get the highest priority command in the commandQueue
+		currCommand = commandQueue.last();
+		
+		// Execute the highest priority command
+		if (currCommand.getStatus() === "idle")
+			currCommand.initialize();
+		currCommand.execute();
 		
 		// An array to keep track of which Subsystems have been claimed by a Command. It is initialized with the highest priority Command's requirements
-		var usedSubsystems = commandQueue.last().getRequirements().concat();
+		var usedSubsystems = currCommand.getRequirements().concat();
 		
 		// A flag to keep track of whether the current Command being checked can run
 		var canRun;
@@ -322,20 +318,27 @@ function EventScheduler() {
 			// An array to keep track of the current Command's requirements
 			currCommandReqs = currCommand.getRequirements();
 			
-			// Loops through the current Command's requirements to check if they are being used by a higher priority Command
-			for (var j = 0; j < currCommandReqs; j++) {
-				// Checks if the subsystem being checked is in use
-				if (usedSubsystems.indexOf(currCommandReqs[j]) !== -1) {
-					// The current Command cannot run
-					canRun = false;
-					break;
+			// Make sure all Subsystems are not in use before checking if any more Commands can run
+			if (usedSubsystems.length === numSubsystems) {
+				canRun = false;
+			} else {
+				// Loops through the current Command's requirements to check if they are being used by a higher priority Command
+				for (var j = 0; j < currCommandReqs.length; j++) {
+					// Checks if the subsystem being checked is in use
+					if (usedSubsystems.indexOf(currCommandReqs[j]) !== -1) {
+						// The current Command cannot run
+						canRun = false;
+						break;
+					}
 				}
 			}
 			
 			// If the current Command can run...
 			if (canRun) {
-				// The current Command is added to the commandsToRun Array
-				commandsToRun.push(currCommand);
+				// The current Command is executed
+				if (currCommand.getStatus() === "idle")
+					currCommand.initialize();
+				currCommand.execute();
 				
 				// Its requirements are added to the Array of Subsystems in use
 				usedSubsystems = usedSubsystems.concat(currCommandReqs);
@@ -344,71 +347,12 @@ function EventScheduler() {
 				if (currCommand.getStatus() === "running") {
 					// Call its interrupted method
 					currCommand.interrupted();
-					// If it is not a default Command, remove it from the queue
-					if (!currCommand.isDefault())
-						rawCommandQueue.splice(rawCommandQueue.indexOf(currCommand), 1);
-				}
-			}
-		}
-		
-		// Adds Commands sorted by Subsystem and by priority into the subsystems Array
-		/*for (var i = 0; i < commandQueue.length; i++) {
-			currCommand = commandQueue[i];
-			for (var j = 0; j < subsystems.length; j++) {
-				if (!subsystems[j])
-					subsystems[j] = new Array();
-				if (currCommand.getRequirements().indexOf(j) === -1) {
-					subsystems[j].push(0);
-				} else {
-					subsystems[j].push(currCommand);
-				}
-			}
-		}
-		
-		var its = subsystems[0].length - 1, topRow, nextRow, newRow, canCombine;
-		for (var i = its; i >= 1; i--) {
-			// Get the top two rows of commands
-			topRow = new Array();
-			nextRow = new Array();
-			newRow = new Array();
-			canCombine = true;
-			for (var j = 0; j < subsystems.length; j++) {
-				topRow.push(subsystems[j][i]);
-				nextRow.push(subsystems[j][i - 1]);
-				
-				// Create a hypothetical new row in case the two rows can combine
-				if (topRow[j] === 0 && nextRow[j] !== 0)
-					newRow[j] = nextRow[j];
-				else
-					newRow[j] = topRow[j];
-				
-				// Check if the two rows can combine or not
-				if (topRow[j] !== 0 && nextRow[j] !== 0) {
-					canCombine = false;
-					if (nextRow[j].getStatus() === "running") {
-						nextRow[j].interrupted();
-						if (!nextRow[j].isDefault())
-							rawCommandQueue.splice(rawCommandQueue.indexOf(nextRow[j]), 1);
-					}
 				}
 				
-				subsystems[j].splice(i - 1, 1);
+				// If it is not a default Command, remove it from the queue
+				if (!currCommand.isDefault())
+					rawCommandQueue.splice(rawCommandQueue.indexOf(currCommand), 1);
 			}
-			
-			// If the two rows can comibne, this code replaces the top row with the combined row
-			if (canCombine) {
-				for (var j = 0; j < subsystems.length; j++)	
-					subsystems[j][i - 1] = newRow[j];
-			}
-		}*/
-		
-		// Run top priority commands whose subsystems are free
-		for (var i = 0; i < commandsToRun.length; i++) {
-			currCommand = commandsToRun[i];
-			if (currCommand.getStatus() === "idle") {
-				currCommand.initialize();
-			}
-			currCommand.execute();
 		}
 	}
 }

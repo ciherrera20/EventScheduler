@@ -16,8 +16,10 @@
 			//var ExampleSubsystem = new Subsystem("ExampleSubsystem");
 			
 			var Base = new Subsystem("Base");
-			var Arm = new Subsystem("Arm");
-			var Claw = new Subsystem("Claw");
+			var Intake = new Subsystem("Intake");
+			var Lift = new Subsystem("Lift");
+			var Puncher = new Subsystem("Puncher");
+			var Turntable = new Subsystem("Turntable");
 			
 			// Commands
 			
@@ -49,54 +51,6 @@
 			//		return;
 			//	}
 			//}, 1);
-			
-			var StopArm = new CommandFactory([Arm], {
-				canRun: function(that) {
-					return true;
-				},
-				initialize: function(that) {
-					return;
-				},
-				execute: function(that) {
-					document.getElementById("stopArm").innerHTML = "running";
-					document.getElementById("arm").innerHTML = "stopped by StopArm";
-					return;
-				},
-				isFinished: function(that) {
-					return false;
-				},
-				end: function(that) {
-					return;
-				},
-				interrupted: function(that) {
-					document.getElementById("stopArm").innerHTML = "interrupted";
-					return;
-				}
-			}, 0);
-
-			var StopClaw = new CommandFactory([Claw], {
-				canRun: function(that) {
-					return true;
-				},
-				initialize: function(that) {
-					return;
-				},
-				execute: function(that) {
-					document.getElementById("stopClaw").innerHTML = "running";
-					document.getElementById("claw").innerHTML = "stopped by StopClaw";
-					return;
-				},
-				isFinished: function(that) {
-					return false;
-				},
-				end: function(that) {
-					return;
-				},
-				interrupted: function(that) {
-					document.getElementById("stopClaw").innerHTML = "interrupted";
-					return;
-				}
-			}, 0);
 
 			var DriveWithJoy = new CommandFactory([Base], {
 				canRun: function(that) {
@@ -122,126 +76,356 @@
 				}
 			}, 0);
 
-			var RaiseArm = new CommandFactory([Arm], {
+			var StopIntake = new CommandFactory([Intake], {
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					return;
+				},
+				execute: function(that) {
+					document.getElementById("stopIntake").innerHTML = "running";
+					document.getElementById("intake").innerHTML = "stopped by StopIntake";
+					return;
+				},
+				isFinished: function(that) {
+					return false;
+				},
+				end: function(that) {
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("stopIntake").innerHTML = "interrupted";
+					return;
+				}
+			}, 0);
+
+			var StopLift = new CommandFactory([Lift], {
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					return;
+				},
+				execute: function(that) {
+					document.getElementById("stopLift").innerHTML = "running";
+					document.getElementById("lift").innerHTML = "stopped by StopLift";
+					return;
+				},
+				isFinished: function(that) {
+					return false;
+				},
+				end: function(that) {
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("stopLift").innerHTML = "interrupted";
+					return;
+				}
+			}, 0);
+			
+			var StopPuncher = new CommandFactory([Puncher], {
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					return;
+				},
+				execute: function(that) {
+					document.getElementById("stopPuncher").innerHTML = "running";
+					document.getElementById("puncher").innerHTML = "stopped by StopPuncher";
+					return;
+				},
+				isFinished: function(that) {
+					return false;
+				},
+				end: function(that) {
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("stopPuncher").innerHTML = "interrupted";
+					return;
+				}
+			}, 0);
+			
+			var StopTurntable = new CommandFactory([Turntable], {
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					return;
+				},
+				execute: function(that) {
+					document.getElementById("stopTurntable").innerHTML = "running";
+					document.getElementById("turntable").innerHTML = "stopped by StopTurntable";
+					return;
+				},
+				isFinished: function(that) {
+					return false;
+				},
+				end: function(that) {
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("stopTurntable").innerHTML = "interrupted";
+					return;
+				}
+			}, 0);
+			
+			var IntakeForwards = new CommandFactory([Intake], {
 				counter: 0,
 				canRun: function(that) {
 					return true;
 				},
 				initialize: function(that) {
-					document.getElementById("raiseArm").innerHTML = "initializing";
 					that.counter = 0;
 					return;
 				},
 				execute: function(that) {
 					that.counter++;
-					document.getElementById("raiseArm").innerHTML = "running " + that.counter.toString();
-					document.getElementById("arm").innerHTML = "in use by RaiseArm";
+					document.getElementById("intakeForwards").innerHTML = "running " + that.counter.toString();
+					document.getElementById("intake").innerHTML = "in use by IntakeForwards";
+					return;
+				},
+				isFinished: function(that) {
+					if (that.counter > 100) {
+						document.getElementById("intake").innerHTML = "idle";
+						return true;
+					}
+					return false;
+				},
+				end: function(that) {
+					document.getElementById("intakeForwards").innerHTML = "finished";
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("intakeForwards").innerHTML = "interrupted";
+					return;
+				}
+			}, 1);
+			
+			var IntakeBackwards = new CommandFactory([Intake], {
+				counter: 0,
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					that.counter = 0;
+					return;
+				},
+				execute: function(that) {
+					that.counter++;
+					document.getElementById("intakeBackwards").innerHTML = "running " + that.counter.toString();
+					document.getElementById("intake").innerHTML = "in use by IntakeBackwards";
+					return;
+				},
+				isFinished: function(that) {
+					if (that.counter > 100) {
+						document.getElementById("intake").innerHTML = "idle";
+						return true;
+					}
+					return false;
+				},
+				end: function(that) {
+					document.getElementById("intakeBackwards").innerHTML = "finished";
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("intakeBackwards").innerHTML = "interrupted";
+					return;
+				}
+			}, 1);
+			
+			var RaiseLift = new CommandFactory([Lift], {
+				counter: 0,
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					that.counter = 0;
+					return;
+				},
+				execute: function(that) {
+					that.counter++;
+					document.getElementById("raiseLift").innerHTML = "running " + that.counter.toString();
+					document.getElementById("lift").innerHTML = "in use by RaiseLift";
 					return;
 				},
 				isFinished: function(that) {
 					if (that.counter > 1000) {
-						document.getElementById("base").innerHTML = "idle";
+						document.getElementById("lift").innerHTML = "idle";
 						return true;
 					}
 					return false;
 				},
 				end: function(that) {
-					document.getElementById("raiseArm").innerHTML = "end";
+					document.getElementById("raiseLift").innerHTML = "finished";
 					return;
 				},
 				interrupted: function(that) {
-					document.getElementById("raiseArm").innerHTML = "interrupted";
-					console.log("interrupted");
-					return;
-				}
-			}, 1);
-
-			var OpenClaw = new CommandFactory([Claw], {
-				counter: 0,
-				canRun: function(that) {
-					return true;
-				},
-				initialize: function(that) {
-					document.getElementById("openClaw").innerHTML = "initializing";
-					that.counter = 0;
-					return;
-				},
-				execute: function(that) {
-					that.counter++;
-					document.getElementById("openClaw").innerHTML = "running " + that.counter.toString();
-					document.getElementById("claw").innerHTML = "being opened by OpenClaw";
-					return;
-				},
-				isFinished: function(that) {
-					if (that.counter > 500) {
-						document.getElementById("claw").innerHTML = "idle";
-						return true;
-					}
-					return false;
-				},
-				end: function(that) {
-					document.getElementById("openClaw").innerHTML = "end";
-					return;
-				},
-				interrupted: function(that) {
-					document.getElementById("openClaw").innerHTML = "interrupted";
+					document.getElementById("raiseLift").innerHTML = "interrupted";
 					return;
 				}
 			}, 1);
 			
-			var PickUpBall = new CommandFactory([Arm, Claw], {
+			var LowerLift = new CommandFactory([Lift], {
 				counter: 0,
 				canRun: function(that) {
 					return true;
 				},
 				initialize: function(that) {
-					document.getElementById("pickUpBall").innerHTML = "initializing";
 					that.counter = 0;
 					return;
 				},
 				execute: function(that) {
 					that.counter++;
-					document.getElementById("pickUpBall").innerHTML = "running " + that.counter.toString();
-					document.getElementById("arm").innerHTML = "in use by pickUpBall";
-					document.getElementById("claw").innerHTML = "in use by pickUpBall";
+					document.getElementById("lowerLift").innerHTML = "running " + that.counter.toString();
+					document.getElementById("lift").innerHTML = "in use by LowerLift";
 					return;
 				},
 				isFinished: function(that) {
-					if (that.counter > 5000) {
-						document.getElementById("arm").innerHTML = "idle";
-						document.getElementById("claw").innerHTML = "idle";
+					if (that.counter > 1000) {
+						document.getElementById("lift").innerHTML = "idle";
 						return true;
 					}
 					return false;
 				},
 				end: function(that) {
-					document.getElementById("pickUpBall").innerHTML = "end";
+					document.getElementById("lowerLift").innerHTML = "finished";
 					return;
 				},
 				interrupted: function(that) {
-					document.getElementById("pickUpBall").innerHTML = "interrupted";
+					document.getElementById("lowerLift").innerHTML = "interrupted";
+					return;
+				}
+			}, 1);
+			
+			var Punch = new CommandFactory([Puncher], {
+				counter: 0,
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					that.counter = 0;
+					return;
+				},
+				execute: function(that) {
+					that.counter++;
+					document.getElementById("punch").innerHTML = "running " + that.counter.toString();
+					document.getElementById("puncher").innerHTML = "in use by Punch";
+					return;
+				},
+				isFinished: function(that) {
+					if (that.counter > 100) {
+						document.getElementById("puncher").innerHTML = "idle";
+						return true;
+					}
+					return false;
+				},
+				end: function(that) {
+					document.getElementById("punch").innerHTML = "finished";
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("punch").innerHTML = "interrupted";
+					return;
+				}
+			}, 1);
+			
+			var FlipTurntable = new CommandFactory([Turntable], {
+				counter: 0,
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					that.counter = 0;
+					return;
+				},
+				execute: function(that) {
+					that.counter++;
+					document.getElementById("flipTurntable").innerHTML = "running " + that.counter.toString();
+					document.getElementById("turntable").innerHTML = "in use by FlipTurntable";
+					return;
+				},
+				isFinished: function(that) {
+					if (that.counter > 100) {
+						document.getElementById("turntable").innerHTML = "idle";
+						return true;
+					}
+					return false;
+				},
+				end: function(that) {
+					document.getElementById("flipTurntable").innerHTML = "finished";
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("flipTurntable").innerHTML = "interrupted";
+					return;
+				}
+			}, 1);
+			
+			var ScoreCap = new CommandFactory([Lift, Turntable], {
+				counter: 0,
+				canRun: function(that) {
+					return true;
+				},
+				initialize: function(that) {
+					that.counter = 0;
+					return;
+				},
+				execute: function(that) {
+					that.counter++;
+					document.getElementById("scoreCap").innerHTML = "running " + that.counter.toString();
+					document.getElementById("lift").innerHTML = "in use by ScoreCap";
+					document.getElementById("turntable").innerHTML = "in use by ScoreCap";
+					return;
+				},
+				isFinished: function(that) {
+					if (that.counter > 1500) {
+						document.getElementById("lift").innerHTML = "idle";
+					document.getElementById("turntable").innerHTML = "idle";
+						return true;
+					}
+					return false;
+				},
+				end: function(that) {
+					document.getElementById("scoreCap").innerHTML = "finished";
+					return;
+				},
+				interrupted: function(that) {
+					document.getElementById("scoreCap").innerHTML = "interrupted";
 					return;
 				}
 			}, 2);
 			
-			//var loop = setInterval(SchedulerInstance.loop, 1);
+			var loop = setInterval(SchedulerInstance.loop, 1);
 			
 			Base.setDefaultCommand(DriveWithJoy);
-			Arm.setDefaultCommand(StopArm);
-			Claw.setDefaultCommand(StopClaw);
+			Intake.setDefaultCommand(StopIntake);
+			Lift.setDefaultCommand(StopLift);
+			Puncher.setDefaultCommand(StopPuncher);
+			Turntable.setDefaultCommand(StopTurntable);
 		</script>
 	</head>
 	<body>
 		<h3>Commands:</h3>
-		<p>Stop Arm: <span id="stopArm"></span></p>
-		<p>Stop Claw: <span id="stopClaw"></span></p>
 		<p>Drive With Joy: <span id="driveWithJoy"></span></p>
-		<p>Raise Arm: <span id="raiseArm"></span></p>
-		<p>Open Claw: <span id="openClaw"></span></p>
-		<p>Pick Up Ball: <span id="pickUpBall"></span></p>
+		<p>Stop Intake: <span id="stopIntake"></span></p>
+		<p>Stop Lift: <span id="stopLift"></span></p>
+		<p>Stop Puncher: <span id="stopPuncher"></span></p>
+		<p>Stop Turntable: <span id="stopTurntable"></span></p>
+		<p>Intake Forwards: <span id="intakeForwards"></span></p>
+		<p>Intake Backwards: <span id="intakeBackwards"></span></p>
+		<p>Raise Lift: <span id="raiseLift"></span></p>
+		<p>Lower Lift: <span id="lowerLift"></span></p>
+		<p>Punch: <span id="punch"></span></p>
+		<p>Flip Turntable: <span id="flipTurntable"></span></p>
+		<p>Score Cap: <span id="scoreCap"></span></p>
 		<h3>Subsystems:</h3>
 		<p>Base: <span id="base"></span></p>
-		<p>Arm: <span id="arm"></span></p>
-		<p>Claw: <span id="claw"></span></p>
+		<p>Intake: <span id="intake"></span></p>
+		<p>Lift: <span id="lift"></span></p>
+		<p>Puncher: <span id="puncher"></span></p>
+		<p>Turntable: <span id="turntable"></span></p>
 	</body>
 <html>
