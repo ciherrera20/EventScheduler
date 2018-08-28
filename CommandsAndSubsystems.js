@@ -1,7 +1,7 @@
 // Requires is a list of subsystems, and code is an object whose keys are functions
 var CommandFactory = (function() {
 	// An array of Commands in order from first added to last added
-	var rawCommandQueue = new Array();
+	var commandQueue = new Array();
 	
 	// Instances of CommandFactories created
 	var instances = 0;
@@ -149,16 +149,16 @@ var CommandFactory = (function() {
 				}
 			}
 			
-			// Adds the command to the rawCommandQueue if it has not been added yet;
+			// Adds the command to the commandQueue if it has not been added yet;
 			var add = true;
-			for (var i = 0; i < rawCommandQueue.length; i++) {
-				if (rawCommandQueue[i].getCommandConstructorID() === this.getCommandConstructorID()) {
+			for (var i = 0; i < commandQueue.length; i++) {
+				if (commandQueue[i].getCommandConstructorID() === this.getCommandConstructorID()) {
 					add = false;
 					break;
 				}
 			}
 			if (add)
-				rawCommandQueue.push(this);
+				addCommand(commandQueue, this);
 		}
 		
 		// Adds the setDefault function to the CommandFactory constructor's prototype
@@ -171,9 +171,35 @@ var CommandFactory = (function() {
 		return Command;
 	}
 	
-	// Gets the rawCommandQueue
-	CommandFactory.getRawCommandQueue = function() {
-		return rawCommandQueue;
+	// Function to add commands in order of priority to a queue
+	function addCommand(queue, command) {
+		// Adds default commands as lowest priority
+		if (command.isDefault()) {
+			queue.unshift(command);
+			return;
+		}
+	
+		// If the queue is empty, adds the first command
+		if (queue.length === 0) {
+			queue.push(command);
+			return;
+		}
+	
+		// Loops through the queue to find where to insert the Command based on priorities
+		for (var i = 0; i < queue.length; i++) {
+			// If the Command to be inserted has the highest priority, it is pushed to the top of the Array
+			if (command.getPriority() <= queue[i].getPriority() && !queue[i].isDefault()) { // Otherwise, it is inserted below Commands of the same priority that were added before it (unless they are default Commands)
+				queue.splice(i, 0, command); // Inserts the Command
+				return;
+			}
+		}
+	
+		queue.push(command);
+	}
+	
+	// Gets the commandQueue
+	CommandFactory.getCommandQueue = function() {
+		return commandQueue;
 	}
 	
 	// Returns the CommandFactory constructor
