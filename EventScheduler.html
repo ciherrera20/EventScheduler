@@ -371,18 +371,18 @@
 					return true;
 				},
 				initialize: function(that) {
-					that.counter = 0;
+					this.counter = 0;
 					return;
 				},
 				execute: function(that) {
-					that.counter++;
-					document.getElementById("scoreCap").innerHTML = "running " + that.counter.toString();
+					this.counter++;
+					document.getElementById("scoreCap").innerHTML = "running " + this.counter.toString();
 					document.getElementById("lift").innerHTML = "in use by ScoreCap";
 					document.getElementById("turntable").innerHTML = "in use by ScoreCap";
 					return;
 				},
 				isFinished: function(that) {
-					if (that.counter > 1500) {
+					if (this.counter > 1500) {
 						document.getElementById("lift").innerHTML = "idle";
 					document.getElementById("turntable").innerHTML = "idle";
 						return true;
@@ -398,6 +398,10 @@
 					return;
 				}
 			}, 2);
+			
+			var CommandGroup1 = new CommandGroupFactory([[new IntakeForwards()], [new IntakeBackwards()]]);
+			var CommandGroup2 = new CommandGroupFactory([[new IntakeForwards(), new Punch()], [new IntakeBackwards()]]);
+			var CommandGroup3 = new CommandGroupFactory([[new RaiseLift()], [new CommandGroup1()], [new CommandGroup2()], [new LowerLift()]]);
 			
 			var loop = setInterval(SchedulerInstance.loop, 1);
 			

@@ -77,7 +77,7 @@ var CommandFactory = (function() {
 							var temp = code[keyList[i]];
 							
 							var func = function() {
-								// Add code here
+								//status = "idle"; // Updates the Command's status to idle
 								return temp(that);
 							}
 							
@@ -125,7 +125,7 @@ var CommandFactory = (function() {
 							var temp = code[keyList[i]];
 							
 							var func = function() {
-								status = "idle"; // Updates the Command's status to idle
+								status = "finished"; // Updates the Command's status to finished
 								return temp(that);
 							}
 							
@@ -137,7 +137,7 @@ var CommandFactory = (function() {
 							var temp = code[keyList[i]];
 							
 							var func = function() {
-								status = "idle"; // Updates the Command's status to idle
+								status = "interrupted"; // Updates the Command's status to interrupted
 								return temp(that);
 							}
 							
@@ -150,7 +150,7 @@ var CommandFactory = (function() {
 			}
 			
 			// Adds the command to the commandQueue if it has not been added yet;
-			var add = true;
+			/*var add = true;
 			for (var i = 0; i < commandQueue.length; i++) {
 				if (commandQueue[i].getCommandConstructorID() === this.getCommandConstructorID()) {
 					add = false;
@@ -158,7 +158,28 @@ var CommandFactory = (function() {
 				}
 			}
 			if (add)
-				addCommand(commandQueue, this);
+				addCommand(commandQueue, this);*/
+			
+			this.add = function() {
+				var add = true;
+				for (var i = 0; i < commandQueue.length; i++) {
+					if (commandQueue[i].getCommandConstructorID() === that.getCommandConstructorID()) {
+						add = false;
+						break;
+					}
+				}
+				if (add)
+					addCommand(commandQueue, that);
+			}
+			
+			this.remove = function() {
+				var i = CommandFactory.getCommandQueue().indexOf(that);
+				if (i !== -1)
+					CommandFactory.getCommandQueue().splice(i, 1);
+			}
+			
+			this.add();
+			//CommandFactory.add(this);
 		}
 		
 		// Adds the setDefault function to the CommandFactory constructor's prototype
@@ -188,7 +209,7 @@ var CommandFactory = (function() {
 		// Loops through the queue to find where to insert the Command based on priorities
 		for (var i = 0; i < queue.length; i++) {
 			// If the Command to be inserted has the highest priority, it is pushed to the top of the Array
-			if (command.getPriority() <= queue[i].getPriority() && !queue[i].isDefault()) { // Otherwise, it is inserted below Commands of the same priority that were added before it (unless they are default Commands)
+			if (command.getPriority() < queue[i].getPriority() && !queue[i].isDefault()) { // Otherwise, it is inserted below Commands of the same priority that were added before it (unless they are default Commands)
 				queue.splice(i, 0, command); // Inserts the Command
 				return;
 			}
@@ -202,8 +223,173 @@ var CommandFactory = (function() {
 		return commandQueue;
 	}
 	
+	/*CommandFactory.add = function(command) {
+		var add = true;
+		for (var i = 0; i < commandQueue.length; i++) {
+			if (commandQueue[i].getCommandConstructorID() === command.getCommandConstructorID()) {
+				add = false;
+				break;
+			}
+		}
+		if (add)
+			addCommand(commandQueue, command);
+	}*/
+	
 	// Returns the CommandFactory constructor
 	return CommandFactory;
+})();
+var a;
+var CommandGroupFactory = (function() {
+	var commandGroupQueue = [];
+	
+	var instances = 0;
+	
+	var CommandGroupFactory = function(commands) {
+		// An ID assigned to the CommandGroupFactory
+		var commandGroupConstructorID = instances++;
+		
+		for (var i = 0; i < commands.length; i++) {
+			for (var j = 0; j < commands[i].length; j++) {
+				commands[i][j].remove();
+			}
+		}
+		
+		var CommandGroup = function() {
+			// For use in private functions
+			var that = this;
+			
+			// A string describing the Command's status. Defaults to idle
+			var status = "idle";
+			
+			// An index on the current sequential commands being run
+			var sequentialIndex = 0;
+			
+			// Gets the current status of the Command
+			this.getStatus = function() {
+				return status;
+			}
+			
+			// Gets the commandConstructorID of the CommandFactory that created this Command
+			this.getCommandGroupConstructorID = function() {
+				return commandGroupConstructorID;
+			}
+			
+			// Checks the canRun function of all the commands in the commandGroup
+			this.canRun = function() {
+				for (var i = 0; i < commands[sequentialIndex].length; i++) {
+					if (!commands[sequentialIndex][i].canRun())
+						return false;
+				}
+				return true;
+			}
+			
+			this.initialize = function() {
+				status = "running";
+				
+				// Initialize the added flag for all of the commands to false
+				for (var i = 0; i < commands.length; i++) {
+					for (var j = 0; j < commands[i].length; j++) {
+						commands[i][j].added = false;
+					}
+				}
+			}
+			
+			this.execute = function() {
+				// Flag to check if the current parallel commands are finished
+				var sequentialFinished = true;
+				
+				// Flag to check if any of the current parallel commands have been interrupted
+				var sequentialInterrupted = false;
+				
+				// Current command
+				var command;
+				
+				for (var i = 0; i < commands[sequentialIndex].length; i++) {
+					command = commands[sequentialIndex][i];
+					if (!command.added) {
+						command.add();
+						command.added = true;
+						sequentialFinished = false;
+					} else {
+						if (command.getStatus() !== "finished") {
+							sequentialFinished = false;
+						}
+						
+						if (command.getStatus() === "interupted" || (command.getStatus() !== "running" && command.getStatus() !== "finished")) {
+							sequentialInterrupted = true;
+							//console.log("interrupted");
+						}
+					}
+				}
+				
+				if (sequentialInterrupted)
+					status = "interrupted";
+				
+				if (sequentialFinished)
+					sequentialIndex++;
+			}
+			
+			this.isFinished = function() {
+				return !(sequentialIndex < commands.length);
+			}
+			
+			this.end = function() {
+				status = "finished";
+				sequentialIndex--;
+			}
+			
+			this.interrupted = function() {
+				status = "interrupted";
+				for (var i = 0; i < commands[sequentialIndex].length; i++) {
+					commands[sequentialIndex][i].remove();
+				}
+			}
+		
+			this.getRequirements = function() {
+				return commands[sequentialIndex];
+			}
+		
+			this.add = function() {
+				// Adds the commandGroup to the commandGroupQueue if it has not been added yet;
+				for (var i = 0; i < commandGroupQueue.length; i++) {
+					if (commandGroupQueue[i].getCommandGroupConstructorID() === that.getCommandGroupConstructorID()) {
+						commandGroupQueue.splice(i, 1);
+						break;
+					}
+				}
+				commandGroupQueue.push(that);
+			}
+			
+			this.remove = function() {
+				var i = CommandGroupFactory.getCommandGroupQueue().indexOf(that);
+				if (i !== -1)
+					CommandGroupFactory.getCommandGroupQueue().splice(i, 1);
+			}
+		
+			this.add();
+			//CommandGroupFactory.add(this);
+		}
+		
+		return CommandGroup;
+	}
+	
+	// Gets the commandQueue
+	CommandGroupFactory.getCommandGroupQueue = function() {
+		return commandGroupQueue;
+	}
+	
+	/*CommandGroupFactory.add = function(commandGroup) {
+		// Adds the commandGroup to the commandGroupQueue if it has not been added yet;
+		for (var i = 0; i < commandGroupQueue.length; i++) {
+			if (commandGroupQueue[i].getCommandGroupConstructorID() === this.getCommandGroupConstructorID()) {
+				commandGroupQueue.splice(i, 1);
+				break;
+			}
+		}
+		commandGroupQueue.push(commandGroup);
+	}*/
+	
+	return CommandGroupFactory;
 })();
 
 // Name is the name of the subsystem
